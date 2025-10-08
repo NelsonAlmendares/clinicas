@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import PageShell from "@/app/PageShell";
-import AppFrame from "@/app/AppFrame";
+import PageShell from "../page_shell/pacientes";
+import AppFrame from "../AppFrame";
 
 export default function Page() {
   return (

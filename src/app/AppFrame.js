@@ -24,7 +24,6 @@ import {
   EditOutlined
 } from "@ant-design/icons";
 import SideNav from "./SideNav";
-import styles from "./page.css";
 
 const { Header, Sider, Content, Footer } = Layout;
 const { useBreakpoint } = Grid;
