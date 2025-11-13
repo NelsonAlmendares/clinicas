@@ -16,9 +16,24 @@ export type Paciente = {
   fecha_registro?: string;
 };
 
-const ORDS_BASE = 'https://g0575431ea754e6-clinicas.adb.us-ashburn-1.oraclecloudapps.com/ords/admin/api/';
-const ORDS_APP  = process.env.ORDS_APP_BASE!;
+import { getOrdsToken } from "../lib/ords";
 
+export async function GET() {
+  try {
+    const access_token = await getOrdsToken();
+    return Response.json({ access_token });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({
+        message: "Error getting token",
+        detail: String(err?.message || err),
+      }),
+      { status: 500 }
+    );
+  }
+}
+
+const ORDS_APP  = process.env.ORDS_APP_BASE!;
 const ORDS_PRIVATE_BASE = process.env.ORDS_PRIVATE_BASE!;
 const ORDS_PRIVATE_BEARER = process.env.ORDS_PRIVATE_BEARER!;
 
@@ -30,26 +45,36 @@ function authHeaders() {
 }
 
 export async function listPacientes() {
+  const token = await getOrdsToken();
+
   const url = `${ORDS_PRIVATE_BASE}/getPacientes/`;
-  const r = await fetch(url, { headers: authHeaders(), cache: "no-store" as any });
+  const r = await fetch(url, {
+    headers: {
+      ...authHeaders(),         
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store" as any,
+  });
+
   const raw = await r.text();
+
   if (!r.ok) {
     console.error("ORDS getPacientes ERROR", { status: r.status, url, body: raw });
     throw new Error(`ORDS getPacientes error ${r.status}`);
   }
+
   const json = raw ? JSON.parse(raw) : {};
   return json.items ?? json;
 }
 
-
 export async function getPaciente(id: number) {
-  const r = await fetch(`${ORDS_BASE}${ORDS_APP}/getPacientesById/${id}`, { headers: authHeaders(), cache: 'no-store' });
+  const r = await fetch(`${ORDS_PRIVATE_BASE}${ORDS_APP}/getPacientesById/${id}`, { headers: authHeaders(), cache: 'no-store' });
   if (!r.ok) throw new Error(`ORDS get error ${r.status}`);
   return (await r.json()) as Paciente;
 }
 
 export async function createPaciente(p: Paciente) {
-  const r = await fetch(`${ORDS_BASE}${ORDS_APP}/pacientes/`, {
+  const r = await fetch(`${ORDS_PRIVATE_BASE}${ORDS_APP}/pacientes/`, {
     method: 'POST', headers: authHeaders(), body: JSON.stringify(p)
   });
   if (!r.ok) throw new Error(`ORDS create error ${r.status}`);
@@ -57,7 +82,7 @@ export async function createPaciente(p: Paciente) {
 }
 
 export async function updatePaciente(id: number, p: Paciente) {
-  const r = await fetch(`${ORDS_BASE}${ORDS_APP}/pacientes/${id}`, {
+  const r = await fetch(`${ORDS_PRIVATE_BASE}${ORDS_APP}/pacientes/${id}`, {
     method: 'PUT', headers: authHeaders(), body: JSON.stringify(p)
   });
   if (!r.ok) throw new Error(`ORDS update error ${r.status}`);
@@ -65,7 +90,7 @@ export async function updatePaciente(id: number, p: Paciente) {
 }
 
 export async function deletePaciente(id: number) {
-  const r = await fetch(`${ORDS_BASE}${ORDS_APP}/pacientes/${id}`, {
+  const r = await fetch(`${ORDS_PRIVATE_BASE}${ORDS_APP}/pacientes/${id}`, {
     method: 'DELETE', headers: authHeaders()
   });
   if (!r.ok) throw new Error(`ORDS delete error ${r.status}`);
